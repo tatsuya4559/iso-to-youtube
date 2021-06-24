@@ -67,6 +67,10 @@ func main() {
 
 // encode invokes ffmpeg
 func encode(in, out string) error {
+	// TODO: use context
+	log.Printf("Encoding %s ...", in)
 	cmd := exec.Command("ffmpeg", "-i", in, out)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
