@@ -41,6 +41,10 @@ func main() {
 			log.Printf("Failed to encode %s: %v", e.Name(), err)
 			continue
 		}
+		if err := os.Rename(inFilepath, filepath.Join("iso", e.Name())); err != nil {
+			log.Printf("Failed to archive %s: %v", inFilepath, err)
+			continue
+		}
 
 		// upload
 		err = uploadVideo(UploadParam{
@@ -50,6 +54,10 @@ func main() {
 		})
 		if err != nil {
 			log.Printf("Failed to upload %s: %v", base, err)
+			continue
+		}
+		if err := os.Rename(outFilepath, filepath.Join("mp4", base+".mp4")); err != nil {
+			log.Printf("Failed to archive %s: %v", outFilepath, err)
 			continue
 		}
 	}
