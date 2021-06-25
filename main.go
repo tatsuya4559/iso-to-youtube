@@ -19,10 +19,6 @@ var (
 func main() {
 	flag.Parse()
 
-	if *inDir == "" {
-		log.Fatalf("Input directory is required")
-	}
-
 	entries, err := os.ReadDir(*inDir)
 	if err != nil {
 		log.Fatalf("Cannot read directory %s: %v", *inDir, err)
@@ -33,15 +29,15 @@ func main() {
 			continue
 		}
 		inFilepath := filepath.Join(*inDir, e.Name())
-		base := e.Name()[:strings.LastIndex(e.Name(), ".iso")]
-		outFilepath := filepath.Join(*outDir, base) + ".mp4"
+		base := strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
+		outFilepath := filepath.Join(*outDir, base+".mp4")
 
 		// encode
 		if err := encode(inFilepath, outFilepath); err != nil {
-			log.Printf("Failed to encode %s: %v", e.Name(), err)
+			log.Printf("Failed to encode %s: %v", inFilepath, err)
 			continue
 		}
-		if err := os.Rename(inFilepath, filepath.Join("iso", e.Name())); err != nil {
+		if err := move(inFilepath, "iso"); err != nil {
 			log.Printf("Failed to archive %s: %v", inFilepath, err)
 			continue
 		}
@@ -53,16 +49,28 @@ func main() {
 			Filename: outFilepath,
 		})
 		if err != nil {
-			log.Printf("Failed to upload %s: %v", base, err)
+			log.Printf("Failed to upload %s: %v", outFilepath, err)
 			continue
 		}
-		if err := os.Rename(outFilepath, filepath.Join("mp4", base+".mp4")); err != nil {
+		if err := move(outFilepath, "mp4"); err != nil {
 			log.Printf("Failed to archive %s: %v", outFilepath, err)
 			continue
 		}
 	}
 
 	fmt.Println("Done!!")
+}
+
+func move(srcFile, destDir string) error {
+	info, err := os.Stat(destDir)
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		filename := filepath.Base(srcFile)
+		return os.Rename(srcFile, filepath.Join(destDir, filename))
+	}
+	return fmt.Errorf("destDir %s is not a directory", destDir)
 }
 
 // encode invokes ffmpeg
